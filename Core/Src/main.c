@@ -58,14 +58,28 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-uint32_t	bufferSwitch;	// 스위치의 상태를 1ms마다 저장
-uint8_t		stateSwitch;	// 스위치의 상태를 결정
+// �?�작주기용 변수
+int taskA;
+int taskB;
+// 스위치용 변수
+uint32_t	bufferSwitch;	// 스위치�?� �?태를 1ms마다 저장
+uint8_t		stateSwitch;	// 스위치�?� �?태를 결정
 // 1ms마다 호출
 void callbackSystick() {
+	// 스위치 채터�? 제거
 	bufferSwitch = bufferSwitch << 1;
 	bufferSwitch += HAL_GPIO_ReadPin(SW_GPIO_Port, SW_Pin);
 	if(bufferSwitch == 0) stateSwitch = 0;
 	if(bufferSwitch == 0xffffffff) stateSwitch = 1;
+	// �?�작 주기 카운트
+	if(taskA > 0) taskA--;
+	if(taskB > 0) taskB--;
+}
+void enableBuzzer() {
+	HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+}
+void disableBuzzer() {
+	HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 }
 /* USER CODE END 0 */
 
@@ -120,9 +134,24 @@ int main(void)
     		printf("count = %d\n", count);
   		}
   		else {
-  			// 스위치를 놓음
+  			// 스위치를 놓�?�
   		}
   		oldSwitch = curSwitch;
+  	}
+  	// task A
+  	if(taskA == 0) {
+  		taskA = 1300;// taskA�?� 실행 주기를 ms단위로 기�?
+  		if(count > 0) {
+  			count--;
+    		printf("count = %d\n", count);
+  		}
+  	}
+  	// task B
+  	if(taskB == 0) {
+  		taskB = 100;// taskB�?� 실행 주기를 ms단위로 기�?
+  		static _Bool flagStateBuzzer;
+  		flagStateBuzzer ^= 1;
+  		flagStateBuzzer == 0 ? enableBuzzer() : disableBuzzer();
   	}
   }
   /* USER CODE END 3 */
